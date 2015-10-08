@@ -1292,14 +1292,24 @@ class Consul(object):
             if checks is not None:
                 data['checks'] = checks
             if lock_delay != 15:
-                data['lockdelay'] = '%ss' % lock_delay
+                if isinstance(lock_delay, str):
+                    data['lockdelay'] = lock_delay
+                else:
+                    data['lockdelay'] = '%ss' % lock_delay
             assert behavior in ('release', 'delete'), \
                 'behavior must be release or delete'
             if behavior != 'release':
                 data['behavior'] = behavior
             if ttl:
-                assert 10 <= ttl <= 3600
-                data['ttl'] = '%ss' % ttl
+                if isinstance(ttl, str):
+                    if ttl.endswith('ms'):
+                        ttl = int(ttl[:-2])
+                    else:
+                        ttl = int(ttl[:-1])*{'s': 1000, 'm': 60000, 'h': 3600000, 'd': 86400000}[ttl[-1]]
+                else:
+                    ttl *= 1000
+                assert 10000 <= ttl <= 3600000
+                data['ttl'] = '%sms' % ttl
             if data:
                 data = json.dumps(data)
             else:
